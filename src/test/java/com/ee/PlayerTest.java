@@ -1,0 +1,89 @@
+package com.ee;
+
+import org.joml.Vector2i;
+import org.joml.Vector3f;
+import org.joml.Vector3i;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+public class PlayerTest {
+
+	@Test
+	public void rotateClampsPitchAndKeepsDirectionNormalized() {
+		Player player = new Player(new Vector3f(0.5f, 1.0f, 0.5f), new Vector3f(1.0f, 0.0f, 0.0f));
+
+		player.rotate(0.0f, (float) Math.toRadians(120.0f));
+
+		assertEquals(1.0f, player.direction.length(), 0.0001f);
+		assertEquals((float) Math.sin(Math.toRadians(89.0f)), player.direction.y, 0.0001f);
+		assertEquals((float) Math.cos(Math.toRadians(89.0f)), player.direction.x, 0.0001f);
+		assertEquals(0.0f, player.direction.z, 0.0001f);
+	}
+
+	@Test
+	public void moveForwardUsesOnlyHorizontalDirection() {
+		Player player = new Player(new Vector3f(0.5f, 1.0f, 0.5f), new Vector3f(1.0f, 1.0f, 0.0f));
+
+		player.moveForward(createEmptyWorld());
+
+		assertEquals(2.0f, player.velocity.x, 0.0001f);
+		assertEquals(0.0f, player.velocity.y, 0.0001f);
+		assertEquals(0.0f, player.velocity.z, 0.0001f);
+	}
+
+	@Test
+	public void jumpOnlyAppliesImpulseWhenGrounded() {
+		World world = createFloorWorld();
+		Player grounded = new Player(new Vector3f(0.5f, 1.0f, 0.5f), new Vector3f(1.0f, 0.0f, 0.0f));
+		Player airborne = new Player(new Vector3f(0.5f, 3.0f, 0.5f), new Vector3f(1.0f, 0.0f, 0.0f));
+
+		grounded.jump(world);
+		airborne.jump(world);
+
+		assertEquals(30.0f, grounded.velocity.y, 0.0001f);
+		assertEquals(0.0f, airborne.velocity.y, 0.0001f);
+	}
+
+	@Test
+	public void setupCameraUsesEyeHeightOffsetAndPlayerDirection() {
+		Player player = new Player(new Vector3f(2.0f, 4.0f, 6.0f), new Vector3f(0.0f, 0.0f, 1.0f));
+		Camera camera = new Camera(new Vector3f(), new Vector3f(1.0f, 0.0f, 0.0f), 90.0f, 1.0f);
+
+		player.setupCamera(camera);
+
+		assertEquals(2.0f, camera.position().x, 0.0001f);
+		assertEquals(5.6f, camera.position().y, 0.0001f);
+		assertEquals(6.0f, camera.position().z, 0.0001f);
+		assertEquals(player.direction.x, camera.direction().x, 0.0001f);
+		assertEquals(player.direction.y, camera.direction().y, 0.0001f);
+		assertEquals(player.direction.z, camera.direction().z, 0.0001f);
+	}
+
+	private static World createEmptyWorld() {
+		World world = new World(new Vector2i(1, 1), false);
+		fillWorld(world, BlockType.Air);
+		return world;
+	}
+
+	private static World createFloorWorld() {
+		World world = createEmptyWorld();
+		for (int x = 0; x < Chunk.chunkSize.x; x++) {
+			for (int z = 0; z < Chunk.chunkSize.z; z++) {
+				world.setBlock(new Vector3i(x, 0, z), new Block(BlockType.Cobblestone));
+			}
+		}
+		return world;
+	}
+
+	private static void fillWorld(World world, BlockType blockType) {
+		for (int x = 0; x < Chunk.chunkSize.x; x++) {
+			for (int y = 0; y < Chunk.chunkSize.y; y++) {
+				for (int z = 0; z < Chunk.chunkSize.z; z++) {
+					world.setBlock(new Vector3i(x, y, z), new Block(blockType));
+				}
+			}
+		}
+	}
+
+}

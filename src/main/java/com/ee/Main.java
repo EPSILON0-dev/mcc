@@ -23,8 +23,6 @@ public class Main implements AutoCloseable, Runnable {
     private static final String windowTitle = "Hello, World!";
     private static final int windowWidth = 1280;
     private static final int windowHeight = 720;
-    private static final float cameraMoveSpeed = 2.5f;
-    private static final float movementBoostMultiplier = 3.0f;
     private static final float mouseLookSensitivity = 0.0025f;
     private long windowHandle;
     private static Shader mainShader;
@@ -37,6 +35,7 @@ public class Main implements AutoCloseable, Runnable {
     private double lastCursorY;
     private World world;
     private PosOnlyMesh cubeMesh;
+    private Player player;
 
     public static void main(String... args) {
         try (Main main = new Main()) {
@@ -80,13 +79,13 @@ public class Main implements AutoCloseable, Runnable {
             lastCursorX = xpos;
             lastCursorY = ypos;
 
-            if (camera != null) {
-                camera.rotate(xOffset * mouseLookSensitivity, yOffset * mouseLookSensitivity);
+            if (player != null) {
+                player.rotate(xOffset * mouseLookSensitivity, yOffset * mouseLookSensitivity);
             }
         });
         glfwSetFramebufferSizeCallback(windowHandle, (windowHandle, width, height) -> {
             glViewport(0, 0, width, height);
-            if (camera != null && height > 0) {
+            if (player != null && height > 0) {
                 camera.setAspectRatio((float) width / height);
             }
         });
@@ -138,8 +137,8 @@ public class Main implements AutoCloseable, Runnable {
             e.printStackTrace(System.err);
         }
 
-        camera = new Camera(new Vector3f(0.0f, 67.0f, 0.0f), new Vector3f(0.0f, 0.0f, -1.0f),
-                (float) 90.0f, (float) windowWidth / windowHeight);
+        camera = new Camera(new Vector3f(0), new Vector3f(0), (float) 90.0f, (float) windowWidth / windowHeight);
+        player = new Player(new Vector3f(0.0f, 67.0f, 0.0f), new Vector3f(0.0f, 0.0f, -1.0f));
         System.out.println("Fly camera controls: WASD move, Space up, Left Shift down, mouse look.");
 
         world = new World(new Vector2i(8));
@@ -153,8 +152,11 @@ public class Main implements AutoCloseable, Runnable {
             float deltaTime = (float) (currentFrameTime - lastFrameTime);
             lastFrameTime = currentFrameTime;
 
-            updateCameraMovement(deltaTime);
             updatePlaceBreak();
+            updatePlayerControls();
+            player.update(world, deltaTime);
+            player.setupCamera(camera);
+            player.dumpDebugInfo(world);
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -169,7 +171,8 @@ public class Main implements AutoCloseable, Runnable {
             // Draw the selection box
             var rayCastResult = RayCast.rayCast(camera, world, 5.0f, false);
             if (rayCastResult.isPresent()) {
-                Matrix4f modelMatrix = new Matrix4f().translate(new Vector3f(rayCastResult.get()).sub(0.001f, 0.001f, 0.001f)).scale(1.002f);
+                Matrix4f modelMatrix = new Matrix4f()
+                        .translate(new Vector3f(rayCastResult.get()).sub(0.001f, 0.001f, 0.001f)).scale(1.002f);
                 selectionShader.use();
                 selectionShader.setUniformMatrix4f("cameraViewProjection", camera.getViewProjectionMatrix());
                 selectionShader.setUniformMatrix4f("modelMatrix", modelMatrix);
@@ -183,29 +186,21 @@ public class Main implements AutoCloseable, Runnable {
         }
     }
 
-    private void updateCameraMovement(float deltaTime) {
-        float movementStep = cameraMoveSpeed * deltaTime;
-
-        if (glfwGetKey(windowHandle, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-            movementStep *= movementBoostMultiplier;
-        }
+    private void updatePlayerControls() {
         if (glfwGetKey(windowHandle, GLFW_KEY_W) == GLFW_PRESS) {
-            camera.moveForward(movementStep);
+            player.moveForward(world);
         }
         if (glfwGetKey(windowHandle, GLFW_KEY_S) == GLFW_PRESS) {
-            camera.moveForward(-movementStep);
+            player.moveBackward(world);
         }
         if (glfwGetKey(windowHandle, GLFW_KEY_D) == GLFW_PRESS) {
-            camera.moveRight(movementStep);
+            player.moveRight(world);
         }
         if (glfwGetKey(windowHandle, GLFW_KEY_A) == GLFW_PRESS) {
-            camera.moveRight(-movementStep);
+            player.moveLeft(world);
         }
-        if (glfwGetKey(windowHandle, GLFW_KEY_E) == GLFW_PRESS) {
-            camera.moveUp(movementStep);
-        }
-        if (glfwGetKey(windowHandle, GLFW_KEY_Q) == GLFW_PRESS) {
-            camera.moveUp(-movementStep);
+        if (glfwGetKey(windowHandle, GLFW_KEY_SPACE) == GLFW_PRESS) {
+            player.jump(world);
         }
     }
 

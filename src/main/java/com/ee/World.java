@@ -70,6 +70,10 @@ public class World {
         }
     }
 
+    public boolean isSolid(int x, int y, int z) {
+        return getBlockNoThrow(new Vector3i(x, y, z)).type != BlockType.Air;
+    }
+
     public void generateChunkMesh(Vector3i worldPos) throws IndexOutOfBoundsException {
         var chunkPos = getChunkInWorld(worldPos);
         if (!chunks.containsKey(chunkPos)) {
