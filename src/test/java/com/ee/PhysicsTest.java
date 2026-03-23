@@ -43,6 +43,16 @@ public class PhysicsTest {
         assertFalse(Physics.isOnGround(world, new Vector3f(0.5f, 3.0f, 0.5f), 0.3f, 1.8f));
     }
 
+    @Test
+    public void canPlaceBlockAtRejectsBlockOverlappingCapsule() {
+        assertFalse(Physics.canPlaceBlockAt(new Vector3f(0.5f, 1.0f, 0.5f), new Vector3i(0, 1, 0), 0.3f, 1.8f));
+    }
+
+    @Test
+    public void canPlaceBlockAtAllowsBlockThatOnlyTouchesCapsuleBoundary() {
+        assertTrue(Physics.canPlaceBlockAt(new Vector3f(0.5f, 1.0f, 0.5f), new Vector3i(0, 0, 0), 0.3f, 1.8f));
+    }
+
     private static World createEmptyWorld() {
         World world = new World(new Vector2i(1, 1), false);
         fillWorld(world, BlockType.Air);

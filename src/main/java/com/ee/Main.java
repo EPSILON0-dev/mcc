@@ -186,21 +186,36 @@ public class Main implements AutoCloseable, Runnable {
         }
     }
 
+    private static boolean prevSpace = false;
     private void updatePlayerControls() {
+        Vector2f movementInput = new Vector2f();
         if (glfwGetKey(windowHandle, GLFW_KEY_W) == GLFW_PRESS) {
-            player.moveForward(world);
+            movementInput.y += 1.0f;
         }
         if (glfwGetKey(windowHandle, GLFW_KEY_S) == GLFW_PRESS) {
-            player.moveBackward(world);
+            movementInput.y -= 1.0f;
         }
         if (glfwGetKey(windowHandle, GLFW_KEY_D) == GLFW_PRESS) {
-            player.moveRight(world);
+            movementInput.x += 1.0f;
         }
         if (glfwGetKey(windowHandle, GLFW_KEY_A) == GLFW_PRESS) {
-            player.moveLeft(world);
+            movementInput.x -= 1.0f;
         }
+
+        if (movementInput.lengthSquared() > 0) {
+            movementInput.normalize();
+            player.setSprinting(glfwGetKey(windowHandle, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS && movementInput.y > 0.0f);
+            player.move(world, movementInput);
+        } else {
+            player.setSprinting(false);
+        }
+
         if (glfwGetKey(windowHandle, GLFW_KEY_SPACE) == GLFW_PRESS) {
-            player.jump(world);
+            if (!prevSpace) {
+                player.jump(world);
+            }
+        } else {
+            prevSpace = false;
         }
     }
 
@@ -227,8 +242,10 @@ public class Main implements AutoCloseable, Runnable {
         if (glfwGetMouseButton(windowHandle, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
             if (!prevRight) {
                 prevRight = true;
-                world.setBlock(previousRayCastResult.get(), new Block(BlockType.Dirt));
-                world.generateChunkMesh(previousRayCastResult.get());
+                if (player.canPlaceBlockAt(previousRayCastResult.get())) {
+                    world.setBlock(previousRayCastResult.get(), new Block(BlockType.Dirt));
+                    world.generateChunkMesh(previousRayCastResult.get());
+                }
             }
         } else {
             prevRight = false;

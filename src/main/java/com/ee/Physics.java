@@ -5,6 +5,7 @@ import java.lang.Math;
 
 public class Physics {
     public static final float ON_GROUND_EPSILON = 1.0e-3f;
+    public static final float COLLISION_EPSILON = 1.0e-3f;
 
     public static Vector3f resolveCapsuleCollision(World world, Vector3f position, float radius, float height) {
         Vector3f resolvedPosition = new Vector3f(position);
@@ -133,9 +134,58 @@ public class Physics {
         return bestCorrection;
     }
 
+    private static float capsuleBlockDistanceSquared(Vector3f position, float radius, float height,
+            int blockX, int blockY, int blockZ) {
+        float boxMinX = blockX;
+        float boxMaxX = blockX + 1.0f;
+        float boxMinY = blockY;
+        float boxMaxY = blockY + 1.0f;
+        float boxMinZ = blockZ;
+        float boxMaxZ = blockZ + 1.0f;
+
+        float segmentStartY = position.y + radius;
+        float segmentEndY = position.y + height - radius;
+
+        if (segmentEndY < segmentStartY) {
+            float midpointY = position.y + height * 0.5f;
+            segmentStartY = midpointY;
+            segmentEndY = midpointY;
+        }
+
+        float capsuleCenterX = position.x;
+        float capsuleCenterZ = position.z;
+        float closestBoxX = Math.clamp(capsuleCenterX, boxMinX, boxMaxX);
+        float closestBoxZ = Math.clamp(capsuleCenterZ, boxMinZ, boxMaxZ);
+
+        float closestSegmentY;
+        float closestBoxY;
+        if (segmentEndY < boxMinY) {
+            closestSegmentY = segmentEndY;
+            closestBoxY = boxMinY;
+        } else if (segmentStartY > boxMaxY) {
+            closestSegmentY = segmentStartY;
+            closestBoxY = boxMaxY;
+        } else {
+            closestSegmentY = Math.clamp((segmentStartY + segmentEndY) * 0.5f, boxMinY, boxMaxY);
+            closestBoxY = closestSegmentY;
+        }
+
+        float deltaX = capsuleCenterX - closestBoxX;
+        float deltaY = closestSegmentY - closestBoxY;
+        float deltaZ = capsuleCenterZ - closestBoxZ;
+        return deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ;
+    }
+
     public static boolean isOnGround(World world, Vector3f position, float radius, float height) {
         Vector3f feetPosition = new Vector3f(position).add(0.0f, -0.01f, 0.0f);
         Vector3f resolvedFeetPosition = resolveCapsuleCollision(world, feetPosition, radius, height);
         return resolvedFeetPosition.y > feetPosition.y + ON_GROUND_EPSILON;
+    }
+
+    public static boolean canPlaceBlockAt(Vector3f capsulePos, Vector3i blockPos, float radius, float height) {
+        float distanceSquared = capsuleBlockDistanceSquared(capsulePos, radius, height,
+                blockPos.x, blockPos.y, blockPos.z);
+        float blockingRadius = Math.max(0.0f, radius - COLLISION_EPSILON);
+        return distanceSquared >= blockingRadius * blockingRadius;
     }
 }

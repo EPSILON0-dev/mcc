@@ -1,5 +1,6 @@
 package com.ee;
 
+import org.joml.Vector2f;
 import org.joml.Vector2i;
 import org.joml.Vector3f;
 import org.joml.Vector3i;
@@ -25,7 +26,7 @@ public class PlayerTest {
 	public void moveForwardUsesOnlyHorizontalDirection() {
 		Player player = new Player(new Vector3f(0.5f, 1.0f, 0.5f), new Vector3f(1.0f, 1.0f, 0.0f));
 
-		player.moveForward(createEmptyWorld());
+		player.move(createEmptyWorld(), new Vector2f(1.0f, 0.0f));
 
 		assertEquals(2.0f, player.velocity.x, 0.0001f);
 		assertEquals(0.0f, player.velocity.y, 0.0001f);
