@@ -1,0 +1,250 @@
+package com.ee;
+
+import org.joml.Vector3f;
+import org.lwjgl.Version;
+import org.lwjgl.glfw.GLFWVidMode;
+import org.lwjgl.system.MemoryStack;
+import org.joml.*;
+
+import java.nio.IntBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
+import static org.lwjgl.glfw.GLFW.*;
+import static org.lwjgl.glfw.GLFWErrorCallback.createPrint;
+import static org.lwjgl.opengl.GL.createCapabilities;
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.system.MemoryUtil.NULL;
+
+public class Main implements AutoCloseable, Runnable {
+
+    private static final String windowTitle = "Hello, World!";
+    private static final int windowWidth = 1280;
+    private static final int windowHeight = 720;
+    private static final float cameraMoveSpeed = 2.5f;
+    private static final float movementBoostMultiplier = 3.0f;
+    private static final float mouseLookSensitivity = 0.0025f;
+    private long windowHandle;
+    private static Shader mainShader;
+    private static Shader selectionShader;
+    private static Texture texture;
+    private static Camera camera;
+    private double lastFrameTime;
+    private boolean firstMouseEvent = true;
+    private double lastCursorX;
+    private double lastCursorY;
+    private World world;
+    private PosOnlyMesh cubeMesh;
+
+    public static void main(String... args) {
+        try (Main main = new Main()) {
+            main.run();
+        }
+    }
+
+    public void run() {
+        init();
+        loop();
+    }
+
+    public void init() {
+        createPrint(System.err).set();
+        System.out.println("Starting LWJGL " + Version.getVersion());
+        if (!glfwInit()) {
+            throw new IllegalStateException("Unable to initialize GLFW");
+        }
+        glfwDefaultWindowHints();
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+        windowHandle = glfwCreateWindow(windowWidth, windowHeight, windowTitle, NULL, NULL);
+        if (windowHandle == NULL) {
+            throw new RuntimeException("Failed to create the GLFW window");
+        }
+        glfwSetKeyCallback(windowHandle, (windowHandle, key, scancode, action, mods) -> {
+            if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) {
+                glfwSetWindowShouldClose(windowHandle, true);
+            }
+        });
+        glfwSetCursorPosCallback(windowHandle, (windowHandle, xpos, ypos) -> {
+            if (firstMouseEvent) {
+                lastCursorX = xpos;
+                lastCursorY = ypos;
+                firstMouseEvent = false;
+                return;
+            }
+
+            float xOffset = (float) (xpos - lastCursorX);
+            float yOffset = (float) (lastCursorY - ypos);
+            lastCursorX = xpos;
+            lastCursorY = ypos;
+
+            if (camera != null) {
+                camera.rotate(xOffset * mouseLookSensitivity, yOffset * mouseLookSensitivity);
+            }
+        });
+        glfwSetFramebufferSizeCallback(windowHandle, (windowHandle, width, height) -> {
+            glViewport(0, 0, width, height);
+            if (camera != null && height > 0) {
+                camera.setAspectRatio((float) width / height);
+            }
+        });
+        try (MemoryStack stack = stackPush()) {
+            IntBuffer pWidth = stack.mallocInt(1);
+            IntBuffer pHeight = stack.mallocInt(1);
+            glfwGetWindowSize(windowHandle, pWidth, pHeight);
+            GLFWVidMode vidMode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+            glfwSetWindowPos(
+                    windowHandle,
+                    (vidMode.width() - pWidth.get(0)) / 2,
+                    (vidMode.height() - pHeight.get(0)) / 2);
+        }
+        glfwMakeContextCurrent(windowHandle);
+        glfwSwapInterval(1);
+        glfwShowWindow(windowHandle);
+        glfwSetInputMode(windowHandle, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        createCapabilities();
+        glEnable(GL_DEPTH_TEST);
+        System.out.println("OpenGL: " + glGetString(GL_VERSION));
+        glClearColor(0.529f, 0.808f, 0.922f, 0.0f);
+        glEnable(GL_DEPTH_TEST);
+        glDepthFunc(GL_LESS);
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+
+        try {
+            String vertSource = Files.readString(Path.of("assets/shaders/main/main.vert"));
+            String fragSource = Files.readString(Path.of("assets/shaders/main/main.frag"));
+            mainShader = new Shader(vertSource, fragSource);
+        } catch (Exception e) {
+            System.err.println("Failed to compile the main shader: " + e.toString());
+            e.printStackTrace(System.err);
+        }
+
+        try {
+            String vertSource = Files.readString(Path.of("assets/shaders/selection/selection.vert"));
+            String fragSource = Files.readString(Path.of("assets/shaders/selection/selection.frag"));
+            selectionShader = new Shader(vertSource, fragSource);
+        } catch (Exception e) {
+            System.err.println("Failed to compile the selection shader: " + e.toString());
+            e.printStackTrace(System.err);
+        }
+
+        try {
+            texture = new Texture(Path.of("assets/textures/atlas.png"));
+        } catch (Exception e) {
+            System.err.println("Failed to load the texture: " + e.toString());
+            e.printStackTrace(System.err);
+        }
+
+        camera = new Camera(new Vector3f(0.0f, 67.0f, 0.0f), new Vector3f(0.0f, 0.0f, -1.0f),
+                (float) 90.0f, (float) windowWidth / windowHeight);
+        System.out.println("Fly camera controls: WASD move, Space up, Left Shift down, mouse look.");
+
+        world = new World(new Vector2i(8));
+        cubeMesh = Cube.cubeMesh();
+    }
+
+    public void loop() {
+        lastFrameTime = glfwGetTime();
+        while (!glfwWindowShouldClose(windowHandle)) {
+            double currentFrameTime = glfwGetTime();
+            float deltaTime = (float) (currentFrameTime - lastFrameTime);
+            lastFrameTime = currentFrameTime;
+
+            updateCameraMovement(deltaTime);
+            updatePlaceBreak();
+
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            // Draw the chunks
+            mainShader.use();
+            mainShader.setUniformMatrix4f("cameraViewProjection", camera.getViewProjectionMatrix());
+            texture.bind(0);
+            mainShader.setUniform1i("baseTex", 0);
+            world.renderChunks(mainShader, "modelMatrix");
+            texture.unbind();
+
+            // Draw the selection box
+            var rayCastResult = RayCast.rayCast(camera, world, 5.0f, false);
+            if (rayCastResult.isPresent()) {
+                Matrix4f modelMatrix = new Matrix4f().translate(new Vector3f(rayCastResult.get()).sub(0.001f, 0.001f, 0.001f)).scale(1.002f);
+                selectionShader.use();
+                selectionShader.setUniformMatrix4f("cameraViewProjection", camera.getViewProjectionMatrix());
+                selectionShader.setUniformMatrix4f("modelMatrix", modelMatrix);
+                cubeMesh.bind();
+                cubeMesh.draw();
+                cubeMesh.unbind();
+            }
+
+            glfwSwapBuffers(windowHandle);
+            glfwPollEvents();
+        }
+    }
+
+    private void updateCameraMovement(float deltaTime) {
+        float movementStep = cameraMoveSpeed * deltaTime;
+
+        if (glfwGetKey(windowHandle, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+            movementStep *= movementBoostMultiplier;
+        }
+        if (glfwGetKey(windowHandle, GLFW_KEY_W) == GLFW_PRESS) {
+            camera.moveForward(movementStep);
+        }
+        if (glfwGetKey(windowHandle, GLFW_KEY_S) == GLFW_PRESS) {
+            camera.moveForward(-movementStep);
+        }
+        if (glfwGetKey(windowHandle, GLFW_KEY_D) == GLFW_PRESS) {
+            camera.moveRight(movementStep);
+        }
+        if (glfwGetKey(windowHandle, GLFW_KEY_A) == GLFW_PRESS) {
+            camera.moveRight(-movementStep);
+        }
+        if (glfwGetKey(windowHandle, GLFW_KEY_E) == GLFW_PRESS) {
+            camera.moveUp(movementStep);
+        }
+        if (glfwGetKey(windowHandle, GLFW_KEY_Q) == GLFW_PRESS) {
+            camera.moveUp(-movementStep);
+        }
+    }
+
+    private static boolean prevLeft = false;
+    private static boolean prevRight = false;
+
+    private void updatePlaceBreak() {
+        var rayCastResult = RayCast.rayCast(camera, world, 5.0f, false);
+        if (rayCastResult.isEmpty()) {
+            return;
+        }
+        var previousRayCastResult = RayCast.rayCast(camera, world, 5.0f, true);
+
+        if (glfwGetMouseButton(windowHandle, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+            if (!prevLeft) {
+                prevLeft = true;
+                world.setBlock(rayCastResult.get(), new Block(BlockType.Air));
+                world.generateChunkMesh(rayCastResult.get());
+            }
+        } else {
+            prevLeft = false;
+        }
+
+        if (glfwGetMouseButton(windowHandle, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+            if (!prevRight) {
+                prevRight = true;
+                world.setBlock(previousRayCastResult.get(), new Block(BlockType.Dirt));
+                world.generateChunkMesh(previousRayCastResult.get());
+            }
+        } else {
+            prevRight = false;
+        }
+    }
+
+    @Override
+    public void close() {
+        glfwFreeCallbacks(windowHandle);
+        glfwDestroyWindow(windowHandle);
+        glfwTerminate();
+        glfwSetErrorCallback(null).free();
+    }
+}

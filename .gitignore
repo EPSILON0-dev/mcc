@@ -1,0 +1,6 @@
+# Java artifacts
+target/
+hs_err_*
+
+# VSCode settings
+.vscode/
