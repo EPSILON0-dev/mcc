@@ -1,4 +1,6 @@
-package com.ee;
+package com.ee.Common;
+
+import com.ee.Client.BlockSide;
 
 public class Block {
     public BlockType type;

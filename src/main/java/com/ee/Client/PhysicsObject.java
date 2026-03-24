@@ -1,6 +1,10 @@
-package com.ee;
+package com.ee.Client;
 
 import org.joml.*;
+
+import com.ee.Common.Config;
+import com.ee.Common.Physics;
+import com.ee.Common.World;
 
 public class PhysicsObject {
     protected Vector3f position;
@@ -20,6 +24,18 @@ public class PhysicsObject {
         this.colliderHeight = colliderHeight;
         this.frictionCoefficient = frictionCoefficient;
         this.gravityStrength = gravityStrength;
+    }
+
+    public Vector3f position() {
+        return position;
+    }
+
+    public Vector3f direction() {
+        return direction;
+    }
+
+    public Vector3f velocity() {
+        return velocity;
     }
 
     public void setPosition(Vector3f position) {

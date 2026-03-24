@@ -5,6 +5,12 @@ import org.joml.Vector3f;
 import org.joml.Vector3i;
 import org.junit.jupiter.api.Test;
 
+import com.ee.Client.PhysicsObject;
+import com.ee.Common.Block;
+import com.ee.Common.BlockType;
+import com.ee.Common.Config;
+import com.ee.Common.World;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PhysicsObjectTest {
@@ -21,10 +27,10 @@ public class PhysicsObjectTest {
 
         object.setDirection(new Vector3f(0.0f, 0.0f, 4.0f));
 
-        assertEquals(1.0f, object.direction.length(), 0.0001f);
-        assertEquals(0.0f, object.direction.x, 0.0001f);
-        assertEquals(0.0f, object.direction.y, 0.0001f);
-        assertEquals(1.0f, object.direction.z, 0.0001f);
+        assertEquals(1.0f, object.direction().length(), 0.0001f);
+        assertEquals(0.0f, object.direction().x, 0.0001f);
+        assertEquals(0.0f, object.direction().y, 0.0001f);
+        assertEquals(1.0f, object.direction().z, 0.0001f);
     }
 
     @Test
@@ -41,11 +47,11 @@ public class PhysicsObjectTest {
         object.setVelocity(new Vector3f(2.0f, 0.0f, 0.0f));
         object.update(world, 0.1f);
 
-        assertEquals(0.0f, object.velocity.x, 0.0001f);
-        assertEquals(-0.981f, object.velocity.y, 0.0001f);
-        assertEquals(2.0f, object.position.x, 0.0001f);
-        assertEquals(4.9019f, object.position.y, 0.0001f);
-        assertEquals(2.0f, object.position.z, 0.0001f);
+        assertEquals(0.0f, object.velocity().x, 0.0001f);
+        assertEquals(-0.981f, object.velocity().y, 0.0001f);
+        assertEquals(2.0f, object.position().x, 0.0001f);
+        assertEquals(4.9019f, object.position().y, 0.0001f);
+        assertEquals(2.0f, object.position().z, 0.0001f);
     }
 
     @Test
@@ -61,8 +67,8 @@ public class PhysicsObjectTest {
 
         object.update(world, 0.1f);
 
-        assertEquals(0.0f, object.velocity.y, 0.0001f);
-        assertEquals(1.0f, object.position.y, 0.0001f);
+        assertEquals(0.0f, object.velocity().y, 0.0001f);
+        assertEquals(1.0f, object.position().y, 0.0001f);
     }
 
     @Test

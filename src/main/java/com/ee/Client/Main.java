@@ -1,9 +1,14 @@
-package com.ee;
+package com.ee.Client;
 
 import org.joml.Vector3f;
 import org.lwjgl.Version;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.system.MemoryStack;
+
+import com.ee.Common.Block;
+import com.ee.Common.BlockType;
+import com.ee.Common.World;
+
 import org.joml.*;
 
 import java.nio.IntBuffer;
@@ -243,8 +248,13 @@ public class Main implements AutoCloseable, Runnable {
             if (!prevRight) {
                 prevRight = true;
                 if (player.canPlaceBlockAt(previousRayCastResult.get())) {
-                    world.setBlock(previousRayCastResult.get(), new Block(BlockType.Dirt));
-                    world.generateChunkMesh(previousRayCastResult.get());
+                    try {
+                        world.setBlock(previousRayCastResult.get(), new Block(BlockType.Dirt));
+                        world.generateChunkMesh(previousRayCastResult.get());
+                    } catch (Exception e) {
+                        System.err.println("Failed to place block: " + e.toString());
+                        e.printStackTrace(System.err);
+                    }
                 }
             }
         } else {

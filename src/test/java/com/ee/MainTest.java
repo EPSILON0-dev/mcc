@@ -2,6 +2,8 @@ package com.ee;
 
 import org.junit.jupiter.api.Test;
 
+import com.ee.Client.Main;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class MainTest {

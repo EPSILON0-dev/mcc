@@ -1,6 +1,12 @@
-package com.ee;
+package com.ee.Client;
 
 import org.joml.*;
+
+import com.ee.Common.Config;
+import com.ee.Common.Physics;
+import com.ee.Common.Util;
+import com.ee.Common.World;
+
 import java.lang.Math;
 
 public class Player extends PhysicsObject {

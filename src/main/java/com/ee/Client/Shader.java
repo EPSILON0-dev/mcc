@@ -1,4 +1,4 @@
-package com.ee;
+package com.ee.Client;
 
 import static org.lwjgl.opengl.GL33.*;
 

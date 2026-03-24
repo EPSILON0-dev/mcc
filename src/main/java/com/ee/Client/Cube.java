@@ -1,4 +1,4 @@
-package com.ee;
+package com.ee.Client;
 
 import org.joml.*;
 import java.util.ArrayList;

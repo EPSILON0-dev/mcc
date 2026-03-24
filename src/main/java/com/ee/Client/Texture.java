@@ -1,4 +1,4 @@
-package com.ee;
+package com.ee.Client;
 
 import java.nio.file.Path;
 import javax.imageio.ImageIO;

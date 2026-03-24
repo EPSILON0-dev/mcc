@@ -1,6 +1,12 @@
-package com.ee;
+package com.ee.Client;
 
 import org.joml.*;
+
+import com.ee.Common.Block;
+import com.ee.Common.BlockType;
+import com.ee.Common.Chunk;
+import com.ee.Common.Config;
+
 import java.util.ArrayList;
 
 public class ChunkRenderer extends Chunk {

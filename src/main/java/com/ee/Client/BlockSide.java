@@ -1,4 +1,4 @@
-package com.ee;
+package com.ee.Client;
 
 public enum BlockSide {
     Front,

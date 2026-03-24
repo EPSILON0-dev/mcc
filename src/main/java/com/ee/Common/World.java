@@ -1,8 +1,11 @@
-package com.ee;
+package com.ee.Common;
 
 import java.util.HashMap;
 import java.lang.Math;
 import org.joml.*;
+
+import com.ee.Client.ChunkRenderer;
+import com.ee.Client.Shader;
 
 public class World {
     private HashMap<Vector2i, ChunkRenderer> chunks;
@@ -12,7 +15,7 @@ public class World {
         this(chunkCount, true);
     }
 
-    World(Vector2i chunkCount, boolean generateMeshes) throws IndexOutOfBoundsException {
+    public World(Vector2i chunkCount, boolean generateMeshes) throws IndexOutOfBoundsException {
         // Sainitize the size
         if (chunkCount.x <= 0 || chunkCount.y <= 0) {
             throw new IndexOutOfBoundsException("World size must be greater than 0");

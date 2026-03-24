@@ -1,4 +1,4 @@
-package com.ee;
+package com.ee.Common;
 
 public enum BlockType {
     Air,

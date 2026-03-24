@@ -1,9 +1,13 @@
-package com.ee;
+package com.ee.Client;
 
 import java.util.Optional;
 import java.lang.Math;
 
 import org.joml.*;
+
+import com.ee.Common.BlockType;
+import com.ee.Common.Config;
+import com.ee.Common.World;
 
 public class RayCast {
     public static Optional<Vector3i> rayCast(Camera camera, World world, float maxDistance, boolean previous) {

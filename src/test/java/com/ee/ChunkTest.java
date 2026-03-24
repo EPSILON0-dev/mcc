@@ -5,6 +5,12 @@ import org.joml.Vector3f;
 import org.joml.Vector3i;
 import org.junit.jupiter.api.Test;
 
+import com.ee.Client.ChunkRenderer;
+import com.ee.Common.Block;
+import com.ee.Common.BlockType;
+import com.ee.Common.Chunk;
+import com.ee.Common.Config;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 

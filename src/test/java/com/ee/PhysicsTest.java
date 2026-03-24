@@ -5,6 +5,12 @@ import org.joml.Vector3f;
 import org.joml.Vector3i;
 import org.junit.jupiter.api.Test;
 
+import com.ee.Common.Block;
+import com.ee.Common.BlockType;
+import com.ee.Common.Config;
+import com.ee.Common.Physics;
+import com.ee.Common.World;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;

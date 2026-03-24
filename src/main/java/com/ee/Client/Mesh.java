@@ -1,4 +1,4 @@
-package com.ee;
+package com.ee.Client;
 
 public interface Mesh {
     public default void bind() {}

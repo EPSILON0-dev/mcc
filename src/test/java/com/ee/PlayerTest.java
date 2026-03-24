@@ -6,6 +6,13 @@ import org.joml.Vector3f;
 import org.joml.Vector3i;
 import org.junit.jupiter.api.Test;
 
+import com.ee.Client.Camera;
+import com.ee.Client.Player;
+import com.ee.Common.Block;
+import com.ee.Common.BlockType;
+import com.ee.Common.Config;
+import com.ee.Common.World;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PlayerTest {
@@ -16,10 +23,10 @@ public class PlayerTest {
 
 		player.rotate(0.0f, (float) Math.toRadians(120.0f));
 
-		assertEquals(1.0f, player.direction.length(), 0.0001f);
-		assertEquals((float) Math.sin(Math.toRadians(89.0f)), player.direction.y, 0.0001f);
-		assertEquals((float) Math.cos(Math.toRadians(89.0f)), player.direction.x, 0.0001f);
-		assertEquals(0.0f, player.direction.z, 0.0001f);
+		assertEquals(1.0f, player.direction().length(), 0.0001f);
+		assertEquals((float) Math.sin(Math.toRadians(89.0f)), player.direction().y, 0.0001f);
+		assertEquals((float) Math.cos(Math.toRadians(89.0f)), player.direction().x, 0.0001f);
+		assertEquals(0.0f, player.direction().z, 0.0001f);
 	}
 
 	@Test
@@ -28,9 +35,9 @@ public class PlayerTest {
 
 		player.move(createEmptyWorld(), new Vector2f(1.0f, 0.0f));
 
-		assertEquals(2.0f, player.velocity.x, 0.0001f);
-		assertEquals(0.0f, player.velocity.y, 0.0001f);
-		assertEquals(0.0f, player.velocity.z, 0.0001f);
+		assertEquals(2.0f, player.velocity().x, 0.0001f);
+		assertEquals(0.0f, player.velocity().y, 0.0001f);
+		assertEquals(0.0f, player.velocity().z, 0.0001f);
 	}
 
 	@Test
@@ -42,8 +49,8 @@ public class PlayerTest {
 		grounded.jump(world);
 		airborne.jump(world);
 
-		assertEquals(30.0f, grounded.velocity.y, 0.0001f);
-		assertEquals(0.0f, airborne.velocity.y, 0.0001f);
+		assertEquals(30.0f, grounded.velocity().y, 0.0001f);
+		assertEquals(0.0f, airborne.velocity().y, 0.0001f);
 	}
 
 	@Test
@@ -56,9 +63,9 @@ public class PlayerTest {
 		assertEquals(2.0f, camera.position().x, 0.0001f);
 		assertEquals(5.6f, camera.position().y, 0.0001f);
 		assertEquals(6.0f, camera.position().z, 0.0001f);
-		assertEquals(player.direction.x, camera.direction().x, 0.0001f);
-		assertEquals(player.direction.y, camera.direction().y, 0.0001f);
-		assertEquals(player.direction.z, camera.direction().z, 0.0001f);
+		assertEquals(player.direction().x, camera.direction().x, 0.0001f);
+		assertEquals(player.direction().y, camera.direction().y, 0.0001f);
+		assertEquals(player.direction().z, camera.direction().z, 0.0001f);
 	}
 
 	private static World createEmptyWorld() {
