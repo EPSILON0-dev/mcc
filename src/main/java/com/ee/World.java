@@ -5,7 +5,7 @@ import java.lang.Math;
 import org.joml.*;
 
 public class World {
-    private HashMap<Vector2i, Chunk> chunks;
+    private HashMap<Vector2i, ChunkRenderer> chunks;
     private Vector3i minPos, maxPos;
 
     public World(Vector2i chunkCount) throws IndexOutOfBoundsException {
@@ -30,7 +30,7 @@ public class World {
         for (int y = 0; y < chunkCount.y; y++) {
             for (int x = 0; x < chunkCount.x; x++) {
                 var pos = new Vector2i(x, y).sub(mid);
-                var chunk = new Chunk(pos);
+                var chunk = new ChunkRenderer(pos);
                 chunk.generateBlocks();
                 if (generateMeshes) {
                     chunk.generateMesh();
@@ -83,7 +83,7 @@ public class World {
     }
 
     public void renderChunks(Shader shader, String modelMatrixUniform) {
-        for (Chunk chunk : chunks.values()) {
+        for (ChunkRenderer chunk : chunks.values()) {
             shader.setUniformMatrix4f(modelMatrixUniform, chunk.modelMatrix());
             chunk.mesh().bind();
             chunk.mesh().draw();
