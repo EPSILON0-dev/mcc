@@ -8,3 +8,6 @@ hs_err_*
 
 # Imgui artifacts
 *imgui.ini
+
+# World files
+*.json
