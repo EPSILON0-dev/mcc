@@ -11,6 +11,7 @@ public class Config {
     public static final long NETWORK_HEARTBEAT_INTERVAL_MS = 10_000L;
     public static final long NETWORK_CHUNK_REQUEST_TTL_MS = 5_000L;
     public static final long WORLD_CHUNK_UNLOAD_TTL_MS = 15_000L;
+    public static final String WORLD_FILE = "world.json";
     public static final Vector3i CHUNK_SIZE = new Vector3i(16, 128, 16);
     public static final int CHUNK_BLOCK_COUNT = CHUNK_SIZE.x * CHUNK_SIZE.y * CHUNK_SIZE.z;
     public static final float PHYSICS_EPSILON = 1.0e-3f;

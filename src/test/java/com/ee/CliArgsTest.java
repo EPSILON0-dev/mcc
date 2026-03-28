@@ -37,6 +37,18 @@ public class CliArgsTest {
         CliArgs.ServerOptions options = CliArgs.parseServer(new String[] { "--port=9000" });
 
         assertEquals(9000, options.port());
+        assertEquals(Config.WORLD_FILE, options.worldFile());
+    }
+
+    @Test
+    public void serverParserAcceptsWorldFileOverride() {
+        CliArgs.ServerOptions options = CliArgs.parseServer(new String[] {
+                "--server-port=9000",
+                "--world-file=saves/test-world.json"
+        });
+
+        assertEquals(9000, options.port());
+        assertEquals("saves/test-world.json", options.worldFile());
     }
 
     @Test
@@ -50,5 +62,6 @@ public class CliArgsTest {
         assertThrows(IllegalArgumentException.class, () -> CliArgs.parseClient(new String[] { "--port" }));
         assertThrows(IllegalArgumentException.class, () -> CliArgs.parseClient(new String[] { "--render-distance=0" }));
         assertThrows(IllegalArgumentException.class, () -> CliArgs.parseServer(new String[] { "--port=abc" }));
+        assertThrows(IllegalArgumentException.class, () -> CliArgs.parseServer(new String[] { "--world-file=   " }));
     }
 }

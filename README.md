@@ -14,11 +14,10 @@ MCC - MineCraftClone - Small Java voxel sandbox prototype built with LWJGL, Open
 - Client-side chunk request TTL to avoid spamming duplicate requests
 - Automatic unloading of chunks that stay outside render distance for too long
 - ImGui debug overlay with runtime information
-- CLI arguments for server IP, port, and render distance
+- CLI arguments for server IP, port, render distance, and server world file
 
 ### Planned Features
 
-- World saving
 - Player models
 - More advanced rendering pipeline (greedy meshing, shadows, point light torches)
 
@@ -63,6 +62,8 @@ mvn -q -DskipTests compile
 ### Server
 
 - `--port=<number>`
+- `--server-port=<number>`
+- `--world-file=<path>` defaults to `world.json`
 
 ### Client
 
@@ -87,5 +88,7 @@ The in-game debug menu currently shows:
 - received packet count
 
 ## Notes
+
+- The server loads chunks from the configured world file on startup and saves the full world on JVM shutdown hooks such as `SIGINT` and `SIGTERM`.
 
 This is a simple Minecraft clone I made to learn Java. Since we all know that the minecraft is the only non-enterprise use case for Java this seemed like the only viable project idea.

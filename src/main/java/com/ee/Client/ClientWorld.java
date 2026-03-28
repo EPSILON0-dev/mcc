@@ -5,7 +5,6 @@ import java.util.Optional;
 import java.util.LinkedList;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.concurrent.Semaphore;
 import java.util.function.LongSupplier;
 import java.lang.Math;
 import org.joml.*;
@@ -17,7 +16,6 @@ import com.ee.Common.Config;
 import com.ee.Common.Util;
 
 public class ClientWorld {
-    private Semaphore worldLock = new Semaphore(1);
     private HashMap<Vector2i, ChunkRenderer> chunks;
     private LinkedList<ChunkRenderer> chunksToGenerateMesh;
     private HashMap<Vector2i, Long> requestedChunks;
@@ -46,72 +44,43 @@ public class ClientWorld {
         this.renderDistance = renderDistance;
     }
 
-    public void addChunk(Vector2i chunkPos, Chunk chunk) {
-        try {
-            var renderer = new ChunkRenderer(chunk);
-            worldLock.acquire();
-            if (requestedChunks.containsKey(chunkPos)) {
-                requestedChunks.remove(chunkPos);
-            }
-            outOfRangeChunks.remove(chunkPos);
-            chunks.put(chunkPos, renderer);
-            chunksToGenerateMesh.add(renderer);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } finally {
-            worldLock.release();
+    public synchronized void addChunk(Vector2i chunkPos, Chunk chunk) {
+        var renderer = new ChunkRenderer(chunk);
+        if (requestedChunks.containsKey(chunkPos)) {
+            requestedChunks.remove(chunkPos);
         }
+        outOfRangeChunks.remove(chunkPos);
+        chunks.put(chunkPos, renderer);
+        chunksToGenerateMesh.add(renderer);
     }
 
-    public void setBlock(Vector3i worldPos, Block block) throws IndexOutOfBoundsException {
-        try {
-            worldLock.acquire();
-            var chunkPos = getChunkInWorld(worldPos);
-            if (!chunks.containsKey(chunkPos)) {
-                throw new IndexOutOfBoundsException("Chunk not found");
-            }
-            var blockPos = getBlockInChunk(worldPos);
-            chunks.get(chunkPos).setBlock(blockPos, block);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } finally {
-            worldLock.release();
+    public synchronized void setBlock(Vector3i worldPos, Block block) throws IndexOutOfBoundsException {
+        var chunkPos = getChunkInWorld(worldPos);
+        if (!chunks.containsKey(chunkPos)) {
+            throw new IndexOutOfBoundsException("Chunk not found");
         }
+        var blockPos = getBlockInChunk(worldPos);
+        chunks.get(chunkPos).setBlock(blockPos, block);
     }
 
-    public void applyBlockUpdate(Vector3i worldPos, Block block) throws IndexOutOfBoundsException {
-        try {
-            worldLock.acquire();
-            var chunkPos = getChunkInWorld(worldPos);
-            if (!chunks.containsKey(chunkPos)) {
-                throw new IndexOutOfBoundsException("Chunk not found");
-            }
-
-            var blockPos = getBlockInChunk(worldPos);
-            chunks.get(chunkPos).setBlock(blockPos, block);
-            queueMeshGenerationForAffectedChunks(chunkPos, blockPos);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } finally {
-            worldLock.release();
+    public synchronized void applyBlockUpdate(Vector3i worldPos, Block block) throws IndexOutOfBoundsException {
+        var chunkPos = getChunkInWorld(worldPos);
+        if (!chunks.containsKey(chunkPos)) {
+            throw new IndexOutOfBoundsException("Chunk not found");
         }
+
+        var blockPos = getBlockInChunk(worldPos);
+        chunks.get(chunkPos).setBlock(blockPos, block);
+        queueMeshGenerationForAffectedChunks(chunkPos, blockPos);
     }
 
-    public Block getBlock(Vector3i worldPos) throws IndexOutOfBoundsException {
-        try {
-            worldLock.acquire();
-            var chunkPos = getChunkInWorld(worldPos);
-            if (!chunks.containsKey(chunkPos)) {
-                throw new IndexOutOfBoundsException("Chunk not found");
-            }
-            var blockPos = getBlockInChunk(worldPos);
-            return chunks.get(chunkPos).getBlock(blockPos);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            return new Block(BlockType.Air);
-        } finally {
-            worldLock.release();
+    public synchronized Block getBlock(Vector3i worldPos) throws IndexOutOfBoundsException {
+        var chunkPos = getChunkInWorld(worldPos);
+        if (!chunks.containsKey(chunkPos)) {
+            throw new IndexOutOfBoundsException("Chunk not found");
         }
+        var blockPos = getBlockInChunk(worldPos);
+        return chunks.get(chunkPos).getBlock(blockPos);
     }
 
     public Block getBlockNoThrow(Vector3i worldPos) {
@@ -122,52 +91,29 @@ public class ClientWorld {
         }
     }
 
-    public Chunk getChunk(Vector2i chunkPos) {
-        try {
-            worldLock.acquire();
-            return chunks.getOrDefault(chunkPos, null);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            return null;
-        } finally {
-            worldLock.release();
-        }
+    public synchronized Chunk getChunk(Vector2i chunkPos) {
+        return chunks.getOrDefault(chunkPos, null);
     }
 
-    public boolean containsChunk(Vector2i chunkPos) {
+    public synchronized boolean containsChunk(Vector2i chunkPos) {
         return chunks.containsKey(chunkPos);
     }
 
-    public int loadedChunkCount() {
-        try {
-            worldLock.acquire();
-            return chunks.size();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            return 0;
-        } finally {
-            worldLock.release();
-        }
+    public synchronized int loadedChunkCount() {
+        return chunks.size();
     }
 
-    public boolean isSolid(int x, int y, int z) {
+    public synchronized boolean isSolid(int x, int y, int z) {
         return getBlockNoThrow(new Vector3i(x, y, z)).type != BlockType.Air;
     }
 
-    public void requestMeshGeneration(Vector2i chunkPos) throws IndexOutOfBoundsException {
-        try {
-            worldLock.acquire();
-            if (!chunks.containsKey(chunkPos)) {
-                throw new IndexOutOfBoundsException("Chunk not found");
-            }
-            var chunk = chunks.get(chunkPos);
-            if (!chunksToGenerateMesh.contains(chunk))
-                chunksToGenerateMesh.add(chunk);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } finally {
-            worldLock.release();
+    public synchronized void requestMeshGeneration(Vector2i chunkPos) throws IndexOutOfBoundsException {
+        if (!chunks.containsKey(chunkPos)) {
+            throw new IndexOutOfBoundsException("Chunk not found");
         }
+        var chunk = chunks.get(chunkPos);
+        if (!chunksToGenerateMesh.contains(chunk))
+            chunksToGenerateMesh.add(chunk);
     }
 
     private void queueMeshGenerationForAffectedChunks(Vector2i chunkPos, Vector3i blockPos) {
@@ -177,33 +123,23 @@ public class ClientWorld {
         }
     }
 
-    public void generateQueuedMeshes() {
+    public synchronized void generateQueuedMeshes() {
         // TODO move mesh generation onto another thread
-        try {
-            worldLock.acquire();
-            for (ChunkRenderer chunk : chunksToGenerateMesh) {
-                chunk.generateMeshData();
-                chunk.generateMesh();
-            }
-            chunksToGenerateMesh.clear();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } finally {
-            worldLock.release();
+        for (ChunkRenderer chunk : chunksToGenerateMesh) {
+            chunk.generateMeshData();
+            chunk.generateMesh();
         }
+        chunksToGenerateMesh.clear();
+    }
+
+    private synchronized ChunkRenderer[] getLoadedChunks() {
+        ChunkRenderer renderers[] = new ChunkRenderer[chunks.values().size()];
+        chunks.values().toArray(renderers);
+        return renderers;
     }
 
     public void renderChunks(Shader shader, String modelMatrixUniform) {
-        ChunkRenderer renderers[] = null;
-        try {
-            worldLock.acquire();
-            renderers = new ChunkRenderer[chunks.values().size()];
-            chunks.values().toArray(renderers);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } finally {
-            worldLock.release();
-        }
+        ChunkRenderer[] renderers = getLoadedChunks();
         if (renderers == null)
             return;
 
@@ -218,37 +154,30 @@ public class ClientWorld {
     }
 
     public void unloadDistantChunks(Player player) {
-        try {
-            worldLock.acquire();
-            long now = currentTimeSupplier.getAsLong();
-            Vector2i playerChunk = getChunkInWorld(Util.vec3fToVec3i(player.position()));
+        long now = currentTimeSupplier.getAsLong();
+        Vector2i playerChunk = getChunkInWorld(Util.vec3fToVec3i(player.position()));
 
-            Iterator<Map.Entry<Vector2i, ChunkRenderer>> iterator = chunks.entrySet().iterator();
-            while (iterator.hasNext()) {
-                Map.Entry<Vector2i, ChunkRenderer> entry = iterator.next();
-                Vector2i chunkPos = entry.getKey();
+        Iterator<Map.Entry<Vector2i, ChunkRenderer>> iterator = chunks.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<Vector2i, ChunkRenderer> entry = iterator.next();
+            Vector2i chunkPos = entry.getKey();
 
-                if (isChunkWithinRenderDistance(chunkPos, playerChunk)) {
-                    outOfRangeChunks.remove(chunkPos);
-                    continue;
-                }
-
-                Long firstOutOfRangeAt = outOfRangeChunks.get(chunkPos);
-                if (firstOutOfRangeAt == null) {
-                    outOfRangeChunks.put(new Vector2i(chunkPos), now);
-                    continue;
-                }
-
-                if (now - firstOutOfRangeAt >= Config.WORLD_CHUNK_UNLOAD_TTL_MS) {
-                    chunksToGenerateMesh.remove(entry.getValue());
-                    outOfRangeChunks.remove(chunkPos);
-                    iterator.remove();
-                }
+            if (isChunkWithinRenderDistance(chunkPos, playerChunk)) {
+                outOfRangeChunks.remove(chunkPos);
+                continue;
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } finally {
-            worldLock.release();
+
+            Long firstOutOfRangeAt = outOfRangeChunks.get(chunkPos);
+            if (firstOutOfRangeAt == null) {
+                outOfRangeChunks.put(new Vector2i(chunkPos), now);
+                continue;
+            }
+
+            if (now - firstOutOfRangeAt >= Config.WORLD_CHUNK_UNLOAD_TTL_MS) {
+                chunksToGenerateMesh.remove(entry.getValue());
+                outOfRangeChunks.remove(chunkPos);
+                iterator.remove();
+            }
         }
     }
 

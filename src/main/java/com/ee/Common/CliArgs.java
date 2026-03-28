@@ -4,7 +4,7 @@ public final class CliArgs {
     public record ClientOptions(String serverHost, int serverPort, int renderDistance) {
     }
 
-    public record ServerOptions(int port) {
+    public record ServerOptions(int port, String worldFile) {
     }
 
     private CliArgs() {
@@ -42,6 +42,7 @@ public final class CliArgs {
 
     public static ServerOptions parseServer(String[] args) {
         int port = Config.NETWORK_SERVER_PORT;
+        String worldFile = Config.WORLD_FILE;
 
         for (String arg : args) {
             String[] option = splitOption(arg);
@@ -53,12 +54,15 @@ public final class CliArgs {
                 case "--server-port":
                     port = parsePositiveInt(key, value);
                     break;
+                case "--world-file":
+                    worldFile = parseNonBlankString(key, value);
+                    break;
                 default:
                     throw new IllegalArgumentException("Unknown server argument: " + key);
             }
         }
 
-        return new ServerOptions(port);
+        return new ServerOptions(port, worldFile);
     }
 
     private static String[] splitOption(String arg) {
@@ -80,5 +84,13 @@ public final class CliArgs {
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Argument must be an integer: " + key, e);
         }
+    }
+
+    private static String parseNonBlankString(String key, String value) {
+        if (value.isBlank()) {
+            throw new IllegalArgumentException("Argument must not be blank: " + key);
+        }
+
+        return value;
     }
 }
