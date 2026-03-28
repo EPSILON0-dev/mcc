@@ -58,6 +58,24 @@ public class ClientWorld {
         }
     }
 
+    public void applyBlockUpdate(Vector3i worldPos, Block block) throws IndexOutOfBoundsException {
+        try {
+            worldLock.acquire();
+            var chunkPos = getChunkInWorld(worldPos);
+            if (!chunks.containsKey(chunkPos)) {
+                throw new IndexOutOfBoundsException("Chunk not found");
+            }
+
+            var blockPos = getBlockInChunk(worldPos);
+            chunks.get(chunkPos).setBlock(blockPos, block);
+            queueMeshGenerationForAffectedChunks(chunkPos, blockPos);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            worldLock.release();
+        }
+    }
+
     public Block getBlock(Vector3i worldPos) throws IndexOutOfBoundsException {
         try {
             worldLock.acquire();
@@ -116,6 +134,13 @@ public class ClientWorld {
             e.printStackTrace();
         } finally {
             worldLock.release();
+        }
+    }
+
+    private void queueMeshGenerationForAffectedChunks(Vector2i chunkPos, Vector3i blockPos) {
+        ChunkRenderer chunk = chunks.get(chunkPos);
+        if (chunk != null && !chunksToGenerateMesh.contains(chunk)) {
+            chunksToGenerateMesh.add(chunk);
         }
     }
 

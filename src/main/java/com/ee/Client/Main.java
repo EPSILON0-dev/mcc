@@ -5,7 +5,6 @@ import org.lwjgl.Version;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.system.MemoryStack;
 
-import com.ee.Common.Block;
 import com.ee.Common.BlockType;
 
 import org.joml.*;
@@ -265,8 +264,7 @@ public class Main implements AutoCloseable, Runnable {
         if (glfwGetMouseButton(windowHandle, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
             if (!prevLeft) {
                 prevLeft = true;
-                world.setBlock(rayCastResult.get(), new Block(BlockType.Air));
-                world.requestMeshGeneration(ClientWorld.getChunkInWorld(rayCastResult.get()));
+                networkManager.sendBlockUpdate(rayCastResult.get(), BlockType.Air);
             }
         } else {
             prevLeft = false;
@@ -286,8 +284,7 @@ public class Main implements AutoCloseable, Runnable {
                 prevRight = true;
                 if (player.canPlaceBlockAt(previousRayCastResult.get())) {
                     try {
-                        world.setBlock(previousRayCastResult.get(), new Block(player.selectedBlockType()));
-                        world.requestMeshGeneration(ClientWorld.getChunkInWorld(previousRayCastResult.get()));
+                        networkManager.sendBlockUpdate(previousRayCastResult.get(), player.selectedBlockType());
                     } catch (Exception e) {
                         System.err.println("Failed to place block: " + e.toString());
                         e.printStackTrace(System.err);
@@ -302,6 +299,9 @@ public class Main implements AutoCloseable, Runnable {
 
     @Override
     public void close() {
+        if (networkManager != null) {
+            networkManager.close();
+        }
         imGuiOverlay.close();
         glfwFreeCallbacks(windowHandle);
         glfwDestroyWindow(windowHandle);
