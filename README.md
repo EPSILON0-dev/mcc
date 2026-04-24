@@ -21,6 +21,50 @@ MCC - MineCraftClone - Small Java voxel sandbox prototype built with LWJGL, Open
 - Player models
 - More advanced rendering pipeline (greedy meshing, shadows, point light torches)
 
+## Network Communication
+
+All traffic between client and server uses UDP. There are four packet types:
+
+| Packet | Direction | Size | Description |
+|---|---|---|---|
+| `HEARTBEAT` | client → server | 1 byte | Sent periodically to keep the client registered on the server |
+| `CHUNK_REQUEST` | client → server | 9 bytes | Requests chunk data at a given (chunkX, chunkZ) |
+| `CHUNK_RESPONSE` | server → client | 13 + N bytes | Returns the compressed block data for the requested chunk |
+| `BLOCK_UPDATE` | client → server → all clients | 14 bytes | Reports a block break or placement; server rebroadcasts to every active client |
+
+The server tracks active clients by the source address of the most recently received packet. Clients that have not sent any packet within the configured TTL are pruned and will no longer receive broadcasts.
+
+### Heartbeat
+
+```
+Client                                    Server
+  |                                          |
+  |--- HEARTBEAT (periodic) ---------------->|  registers / refreshes client TTL
+  |                                          |
+```
+
+### Chunk retrieval
+
+```
+Client                                    Server
+  |                                          |
+  |--- CHUNK_REQUEST (chunkX, chunkZ) ------>|
+  |<-- CHUNK_RESPONSE (compressed data) -----|  server generates chunk if missing
+  |                                          |
+```
+
+### Block update
+
+```
+Client                                    Server
+  |                                          |
+  |--- BLOCK_UPDATE (x, y, z, type) -------->|  player breaks / places a block
+  |                                          |
+  |                                          |--- BLOCK_UPDATE (broadcast) --> all active clients
+  |                                          |
+  |<-- BLOCK_UPDATE (x, y, z, type) ---------|  including the originating client
+```
+
 ## Controls
 
 - `W A S D`: move
@@ -89,6 +133,8 @@ The in-game debug menu currently shows:
 
 ## Notes
 
-- The server loads chunks from the configured world file on startup and saves the full world on JVM shutdown hooks such as `SIGINT` and `SIGTERM`.
-
 This is a simple Minecraft clone I made to learn Java. Since we all know that the minecraft is the only non-enterprise use case for Java this seemed like the only viable project idea.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
